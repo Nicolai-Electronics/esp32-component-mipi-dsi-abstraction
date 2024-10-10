@@ -1,4 +1,3 @@
-version: "1.0.0"
 targets:
   - esp32p4
 description: MIPI DSI display abstraction layer
@@ -10,5 +9,5 @@ dependencies:
   cmake_utilities: "0.*"
   esp_lcd_ek79007: "^1.0.0"
   esp_lcd_ili9881c: "^1.0.0"
-  nicolaielectronics/esp_lcd_st7701: "^0.0.1"
+  esp_lcd_st7701: "^1.0.0"
 license: "MIT"

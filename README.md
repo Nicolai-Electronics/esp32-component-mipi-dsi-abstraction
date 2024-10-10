@@ -4,11 +4,11 @@
 
 Abstraction layer for quickly experimenting with MIPI DSI displays.
 
-| LCD controller | Component name                    |
-| :------------: | :-------------------------------: |
-|     EK79007    | esp_lcd_ek79007                   |
-|     ILI9981C   | esp_lcd_ili9981c                  |
-|     ST7701     | nicolaielectronics/esp_lcd_st7701 |
+| LCD controller | Component name                    | Note                                                                |
+| :------------: | :-------------------------------: | :-----------------------------------------------------------------: |
+|     EK79007    | esp_lcd_ek79007                   | Included in the ESP32-P4-Function-EV-Board with v0.1 chip kit       |
+|     ILI9981C   | esp_lcd_ili9981c                  | Included in the ESP32-P4 devkit with v0.0 chip                      |
+|     ST7701(S)  | esp_lcd_st7701                    | Configured for use with the display on the WHY2025 badge / Tanmatsu |
 
 ## Add to project
 
@@ -20,6 +20,11 @@ You can add them to your project via `idf.py add-dependancy`, e.g.
 ```
 
 Alternatively, you can create `idf_component.yml`. More is in [Espressif's documentation](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/tools/idf-component-manager.html).
+
+## Note
+
+This component was made to facilitate easier testing for our firmwares on both the devkits and our target hardware and thus
+the configurations we use are the only supported display configurations.
 
 ## Example
 

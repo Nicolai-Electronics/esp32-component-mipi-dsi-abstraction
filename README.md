@@ -1,6 +1,6 @@
 # MIPI DSI abstraction
 
-[![Component Registry](https://components.espressif.com/components/nicolaielectronics/mipi-dsi-abstraction/badge.svg)](https://components.espressif.com/components/nicolaielectronics/esp32-component-mipi-dsi-abstraction)
+[![Component Registry](https://components.espressif.com/components/nicolaielectronics/mipi_dsi_abstraction/badge.svg)](https://components.espressif.com/components/nicolaielectronics/mipi_dsi_abstraction)
 
 Abstraction layer for quickly experimenting with MIPI DSI displays.
 

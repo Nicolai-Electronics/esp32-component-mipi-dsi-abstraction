@@ -32,8 +32,9 @@ static const char *TAG = "ST7701 panel";
 #define PANEL_MIPI_DSI_LCD_VSYNC    16
 #define PANEL_MIPI_DSI_LCD_VBP      16
 #define PANEL_MIPI_DSI_LCD_VFP      16
-#define PANEL_MIPI_DSI_LANE_NUM          2    // 2 data lanes
-#define PANEL_MIPI_DSI_LANE_BITRATE_MBPS 250  // 250 Mbps
+
+#define PANEL_MIPI_DSI_LANE_NUM          2
+#define PANEL_MIPI_DSI_LANE_BITRATE_MBPS 500
 
 static const st7701_lcd_init_cmd_t tanmatsu_display_init_sequence[] = {
     //  {cmd, { data }, data_size, delay_ms}

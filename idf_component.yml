@@ -9,5 +9,5 @@ dependencies:
   cmake_utilities: "0.*"
   esp_lcd_ek79007: "^1.0.0"
   esp_lcd_ili9881c: "^1.0.0"
-  esp_lcd_st7701: "^1.1.0"
+  esp_lcd_st7701: "^1.1.1"
 license: "MIT"

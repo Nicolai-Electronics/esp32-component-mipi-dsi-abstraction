@@ -1,7 +1,7 @@
 #pragma once
 
-#include "esp_lcd_mipi_dsi.h"
 #include "driver/gpio.h"
+#include "esp_lcd_mipi_dsi.h"
 
 esp_lcd_panel_handle_t st7701_get_panel(void);
 void st7701_initialize(gpio_num_t reset_pin);

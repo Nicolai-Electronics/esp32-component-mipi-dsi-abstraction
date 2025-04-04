@@ -86,9 +86,14 @@ static const st7701_lcd_init_cmd_t tanmatsu_display_init_sequence[] = {
 };
 
 static esp_lcd_panel_handle_t mipi_dpi_panel = NULL;
+static esp_lcd_panel_io_handle_t mipi_dbi_io = NULL;
 
 esp_lcd_panel_handle_t st7701_get_panel(void) {
     return mipi_dpi_panel;
+}
+
+esp_lcd_panel_io_handle_t st7701_get_panel_io(void) {
+    return mipi_dbi_io;
 }
 
 void st7701_get_parameters(size_t* h_res, size_t* v_res, lcd_color_rgb_pixel_format_t* color_fmt) {
@@ -115,7 +120,6 @@ void st7701_initialize(gpio_num_t reset_pin) {
     ESP_ERROR_CHECK(esp_lcd_new_dsi_bus(&bus_config, &mipi_dsi_bus));
 
     ESP_LOGI(TAG, "Install MIPI DSI LCD control IO");
-    esp_lcd_panel_io_handle_t mipi_dbi_io;
     // we use DBI interface to send LCD commands and parameters
     esp_lcd_dbi_io_config_t dbi_config = {
         .virtual_channel = 0,

@@ -9,6 +9,7 @@ Abstraction layer for quickly experimenting with MIPI DSI displays.
 |     EK79007    | esp_lcd_ek79007                   | Included in the ESP32-P4-Function-EV-Board with v0.1 chip kit                                   |
 |     ILI9981C   | esp_lcd_ili9981c                  | Included in the ESP32-P4 devkit with v0.0 chip                                                  |
 |     ST7701(S)  | esp_lcd_st7701                    | Configured for use with the display on [Tanmatsu](https://nicolaielectronics.nl/docs/tanmatsu/) |
+|     LT8912B    | esp_lcd_lt8912b                   | MIPI DSI to HDMI adapter chip                                                                   |
 
 ## Add to project
 

@@ -5,9 +5,10 @@ url: https://github.com/Nicolai-Electronics/esp32-component-mipi-dsi-abstraction
 repository: git://github.com/Nicolai-Electronics/esp32-component-mipi-dsi-abstraction.git
 issues: https://github.com/Nicolai-Electronics/esp32-component-mipi-dsi-abstraction/issues
 dependencies:
-  idf: ">=5.3"
-  cmake_utilities: "0.*"
-  esp_lcd_ek79007: "^1.0.0"
-  esp_lcd_ili9881c: "^1.0.0"
-  esp_lcd_st7701: "^1.1.1"
+  idf: ">=5.4"
+  espressif/cmake_utilities: "0.*"
+  espressif/esp_lcd_ek79007: "^1.0.0"
+  espressif/esp_lcd_ili9881c: "^1.0.0"
+  espressif/esp_lcd_st7701: "^1.1.1"
+  espressif/esp_lcd_lt8912b: "^0.1.1"
 license: "MIT"

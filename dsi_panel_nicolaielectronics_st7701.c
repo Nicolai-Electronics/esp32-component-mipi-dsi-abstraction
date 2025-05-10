@@ -96,7 +96,7 @@ esp_lcd_panel_io_handle_t st7701_get_panel_io(void) {
     return mipi_dbi_io;
 }
 
-void st7701_get_parameters(size_t* h_res, size_t* v_res, lcd_color_rgb_pixel_format_t* color_fmt) {
+esp_err_t st7701_get_parameters(size_t* h_res, size_t* v_res, lcd_color_rgb_pixel_format_t* color_fmt) {
     if (h_res) {
         *h_res = PANEL_MIPI_DSI_LCD_H_RES;
     }
@@ -106,9 +106,11 @@ void st7701_get_parameters(size_t* h_res, size_t* v_res, lcd_color_rgb_pixel_for
     if (color_fmt) {
         *color_fmt = LCD_COLOR_PIXEL_FORMAT_RGB565;
     }
+
+    return ESP_OK;
 }
 
-void st7701_initialize(gpio_num_t reset_pin) {
+esp_err_t st7701_initialize(gpio_num_t reset_pin) {
     // create MIPI DSI bus first, it will initialize the DSI PHY as well
     esp_lcd_dsi_bus_handle_t mipi_dsi_bus;
     esp_lcd_dsi_bus_config_t bus_config = {
@@ -176,4 +178,6 @@ void st7701_initialize(gpio_num_t reset_pin) {
         //.on_refresh_done = ...,
     };
     ESP_ERROR_CHECK(esp_lcd_dpi_panel_register_event_callbacks(mipi_dpi_panel, &cbs, display));*/
+
+    return ESP_OK;
 }

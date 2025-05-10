@@ -1,6 +1,7 @@
 #pragma once
 
 #include "driver/gpio.h"
+#include "esp_err.h"
 #include "esp_lcd_mipi_dsi.h"
 
 esp_lcd_panel_handle_t ili9881c_get_panel(void);

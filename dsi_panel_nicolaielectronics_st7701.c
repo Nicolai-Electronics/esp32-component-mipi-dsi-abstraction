@@ -22,7 +22,7 @@
 
 static const char* TAG = "ST7701 panel";
 
-// FPS = 30000000/(40+40+30+480)/(16+16+16+800) = 60Hz
+// FPS = 30000000/(40+40+30+480)/(16+16+2+800) = 60.9Hz (VFP=2 for this panel)
 #define PANEL_MIPI_DSI_DPI_CLK_MHZ 30
 #define PANEL_MIPI_DSI_LCD_H_RES   480
 #define PANEL_MIPI_DSI_LCD_V_RES   800
@@ -41,6 +41,7 @@ static const st7701_lcd_init_cmd_t tanmatsu_display_init_sequence[] = {
     {0xFF, (uint8_t[]){0x77, 0x01, 0x00, 0x00, 0x00}, 5, 0},  // Regular command function
     {LCD_CMD_NORON, (uint8_t[]){0x00}, 0, 0},                 // Turn on normal display mode
     {0xEF, (uint8_t[]){0x08}, 1, 0},                          //
+    {LCD_CMD_COLMOD, (uint8_t[]){0x77}, 1, 0},                // 24BPP: Set RGB888 pixel format (0x77 = 24-bit)
 
     {0xFF, (uint8_t[]){0x77, 0x01, 0x00, 0x00, 0x10}, 5, 0},  // Command 2 BK0 function
     {0xC0, (uint8_t[]){0x63, 0x00}, 2, 0},                    // LNESET (Display Line Setting): (0x63+1)*8 = 800 lines
@@ -104,7 +105,7 @@ esp_err_t st7701_get_parameters(size_t* h_res, size_t* v_res, lcd_color_rgb_pixe
         *v_res = PANEL_MIPI_DSI_LCD_V_RES;
     }
     if (color_fmt) {
-        *color_fmt = LCD_COLOR_PIXEL_FORMAT_RGB565;
+        *color_fmt = LCD_COLOR_PIXEL_FORMAT_RGB888;  // 24BPP: Changed from RGB565
     }
 
     return ESP_OK;
@@ -135,7 +136,7 @@ esp_err_t st7701_initialize(gpio_num_t reset_pin) {
         .virtual_channel = 0,
         .dpi_clk_src = MIPI_DSI_DPI_CLK_SRC_DEFAULT,
         .dpi_clock_freq_mhz = PANEL_MIPI_DSI_DPI_CLK_MHZ,
-        .pixel_format = LCD_COLOR_PIXEL_FORMAT_RGB565,
+        .pixel_format = LCD_COLOR_PIXEL_FORMAT_RGB888,  // 24BPP: Changed from RGB565
         .video_timing =
             {
                 .h_size = PANEL_MIPI_DSI_LCD_H_RES,
@@ -164,7 +165,7 @@ esp_err_t st7701_initialize(gpio_num_t reset_pin) {
     esp_lcd_panel_dev_config_t lcd_dev_config = {
         .reset_gpio_num = reset_pin,
         .rgb_ele_order = LCD_RGB_ELEMENT_ORDER_RGB,
-        .bits_per_pixel = 16,
+        .bits_per_pixel = 24,  // 24BPP: Changed from 16
         .vendor_config = &vendor_config,
     };
     ESP_ERROR_CHECK(esp_lcd_new_panel_st7701(mipi_dbi_io, &lcd_dev_config, &mipi_dpi_panel));

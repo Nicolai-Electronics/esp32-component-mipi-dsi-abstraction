@@ -37,6 +37,20 @@ If you need to use RGB565 (16-bit color) mode for bandwidth savings or compatibi
 
 **Important:** On Tanmatsu devices, `st7701_initialize()` is called internally by `bsp_device_initialize()`. You must call `st7701_set_color_format()` **before** `bsp_device_initialize()` to ensure the display controller is configured correctly from the start.
 
+#### Setup
+
+First, add the component dependency to your `main/CMakeLists.txt`:
+
+```cmake
+idf_component_register(
+    SRCS "main.c"
+    PRIV_REQUIRES
+        badge-bsp
+        esp32-component-mipi-dsi-abstraction  # Add this line
+    INCLUDE_DIRS "."
+)
+```
+
 #### Usage Example:
 
 ```c
@@ -61,7 +75,9 @@ void app_main(void) {
 }
 ```
 
-**Note:** The `extern` declaration is necessary because `st7701_set_color_format()` is not exposed through the BSP headers. Alternatively, you can include `"dsi_panel_nicolaielectronics_st7701.h"` directly if your build system has access to the component headers.
+**Notes:**
+- The `extern` declaration is necessary because `st7701_set_color_format()` is not exposed through the BSP headers.
+- Adding `esp32-component-mipi-dsi-abstraction` to `PRIV_REQUIRES` is required for the linker to find the function.
 
 ### Color Format Comparison
 

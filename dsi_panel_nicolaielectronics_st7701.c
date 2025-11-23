@@ -5,11 +5,13 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "driver/gpio.h"
 #include "esp_err.h"
 #include "esp_lcd_mipi_dsi.h"
 #include "esp_lcd_panel_commands.h"
+#include "esp_lcd_panel_io.h"
 #include "esp_lcd_panel_ops.h"
 #include "esp_lcd_st7701.h"
 #include "esp_ldo_regulator.h"
@@ -41,7 +43,7 @@ static const st7701_lcd_init_cmd_t tanmatsu_display_init_sequence[] = {
     {0xFF, (uint8_t[]){0x77, 0x01, 0x00, 0x00, 0x00}, 5, 0},  // Regular command function
     {LCD_CMD_NORON, (uint8_t[]){0x00}, 0, 0},                 // Turn on normal display mode
     {0xEF, (uint8_t[]){0x08}, 1, 0},                          //
-    {LCD_CMD_COLMOD, (uint8_t[]){0x77}, 1, 0},                // 24BPP: Set RGB888 pixel format (0x77 = 24-bit)
+    {LCD_CMD_COLMOD, (uint8_t[]){0x77}, 1, 0},                // Set RGB888 pixel format (0x77 = 24-bit) - default
 
     {0xFF, (uint8_t[]){0x77, 0x01, 0x00, 0x00, 0x10}, 5, 0},  // Command 2 BK0 function
     {0xC0, (uint8_t[]){0x63, 0x00}, 2, 0},                    // LNESET (Display Line Setting): (0x63+1)*8 = 800 lines
@@ -88,6 +90,7 @@ static const st7701_lcd_init_cmd_t tanmatsu_display_init_sequence[] = {
 
 static esp_lcd_panel_handle_t mipi_dpi_panel = NULL;
 static esp_lcd_panel_io_handle_t mipi_dbi_io = NULL;
+static lcd_color_rgb_pixel_format_t current_color_format = LCD_COLOR_PIXEL_FORMAT_RGB888;  // Default to RGB888 (24-bit)
 
 esp_lcd_panel_handle_t st7701_get_panel(void) {
     return mipi_dpi_panel;
@@ -105,13 +108,39 @@ esp_err_t st7701_get_parameters(size_t* h_res, size_t* v_res, lcd_color_rgb_pixe
         *v_res = PANEL_MIPI_DSI_LCD_V_RES;
     }
     if (color_fmt) {
-        *color_fmt = LCD_COLOR_PIXEL_FORMAT_RGB888;  // 24BPP: Changed from RGB565
+        *color_fmt = current_color_format;
+    }
+
+    return ESP_OK;
+}
+
+esp_err_t st7701_set_color_format(lcd_color_rgb_pixel_format_t format) {
+    if (format != LCD_COLOR_PIXEL_FORMAT_RGB565 && format != LCD_COLOR_PIXEL_FORMAT_RGB888) {
+        ESP_LOGE(TAG, "Unsupported color format");
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    current_color_format = format;
+
+    // Send COLMOD command to panel to change format
+    // RGB888 = 0x77 (24-bit), RGB565 = 0x55 (16-bit)
+    uint8_t colmod_val = (format == LCD_COLOR_PIXEL_FORMAT_RGB888) ? 0x77 : 0x55;
+
+    if (mipi_dbi_io != NULL) {
+        ESP_LOGI(TAG, "Setting display color format to %s",
+                 (format == LCD_COLOR_PIXEL_FORMAT_RGB888) ? "RGB888" : "RGB565");
+        esp_lcd_panel_io_tx_param(mipi_dbi_io, LCD_CMD_COLMOD, &colmod_val, 1);
+    } else {
+        ESP_LOGW(TAG, "Panel IO not initialized, format will be applied on next init");
     }
 
     return ESP_OK;
 }
 
 esp_err_t st7701_initialize(gpio_num_t reset_pin) {
+    ESP_LOGI(TAG, "Initializing ST7701 display in %s mode",
+             (current_color_format == LCD_COLOR_PIXEL_FORMAT_RGB888) ? "RGB888" : "RGB565");
+
     // create MIPI DSI bus first, it will initialize the DSI PHY as well
     esp_lcd_dsi_bus_handle_t mipi_dsi_bus;
     esp_lcd_dsi_bus_config_t bus_config = {
@@ -131,12 +160,35 @@ esp_err_t st7701_initialize(gpio_num_t reset_pin) {
     };
     ESP_ERROR_CHECK(esp_lcd_new_panel_io_dbi(mipi_dsi_bus, &dbi_config, &mipi_dbi_io));
 
+    // Create a mutable copy of the init sequence to modify COLMOD based on current format
+    size_t init_cmds_count = sizeof(tanmatsu_display_init_sequence) / sizeof(st7701_lcd_init_cmd_t);
+    st7701_lcd_init_cmd_t* init_sequence = malloc(sizeof(tanmatsu_display_init_sequence));
+    if (init_sequence == NULL) {
+        ESP_LOGE(TAG, "Failed to allocate memory for init sequence");
+        return ESP_ERR_NO_MEM;
+    }
+    memcpy(init_sequence, tanmatsu_display_init_sequence, sizeof(tanmatsu_display_init_sequence));
+
+    // Create new data for COLMOD command (can't modify const data in original)
+    static uint8_t colmod_data[1];
+    colmod_data[0] = (current_color_format == LCD_COLOR_PIXEL_FORMAT_RGB888) ? 0x77 : 0x55;
+
+    // Find and update the COLMOD command pointer
+    for (size_t i = 0; i < init_cmds_count; i++) {
+        if (init_sequence[i].cmd == LCD_CMD_COLMOD) {
+            init_sequence[i].data = colmod_data;
+            ESP_LOGI(TAG, "Set COLMOD to 0x%02x for %s", colmod_data[0],
+                     (current_color_format == LCD_COLOR_PIXEL_FORMAT_RGB888) ? "RGB888" : "RGB565");
+            break;
+        }
+    }
+
     ESP_LOGI(TAG, "Install MIPI DSI LCD data panel");
     esp_lcd_dpi_panel_config_t dpi_config = {
         .virtual_channel = 0,
         .dpi_clk_src = MIPI_DSI_DPI_CLK_SRC_DEFAULT,
         .dpi_clock_freq_mhz = PANEL_MIPI_DSI_DPI_CLK_MHZ,
-        .pixel_format = LCD_COLOR_PIXEL_FORMAT_RGB888,  // 24BPP: Changed from RGB565
+        .pixel_format = current_color_format,
         .video_timing =
             {
                 .h_size = PANEL_MIPI_DSI_LCD_H_RES,
@@ -152,8 +204,8 @@ esp_err_t st7701_initialize(gpio_num_t reset_pin) {
     };
 
     st7701_vendor_config_t vendor_config = {
-        .init_cmds = tanmatsu_display_init_sequence,
-        .init_cmds_size = sizeof(tanmatsu_display_init_sequence) / sizeof(st7701_lcd_init_cmd_t),
+        .init_cmds = init_sequence,  // Use our modified sequence
+        .init_cmds_size = init_cmds_count,
         .mipi_config =
             {
                 .dsi_bus = mipi_dsi_bus,
@@ -165,13 +217,16 @@ esp_err_t st7701_initialize(gpio_num_t reset_pin) {
     esp_lcd_panel_dev_config_t lcd_dev_config = {
         .reset_gpio_num = reset_pin,
         .rgb_ele_order = LCD_RGB_ELEMENT_ORDER_RGB,
-        .bits_per_pixel = 24,  // 24BPP: Changed from 16
+        .bits_per_pixel = (current_color_format == LCD_COLOR_PIXEL_FORMAT_RGB888) ? 24 : 16,
         .vendor_config = &vendor_config,
     };
     ESP_ERROR_CHECK(esp_lcd_new_panel_st7701(mipi_dbi_io, &lcd_dev_config, &mipi_dpi_panel));
 
     ESP_ERROR_CHECK(esp_lcd_panel_reset(mipi_dpi_panel));
     ESP_ERROR_CHECK(esp_lcd_panel_init(mipi_dpi_panel));
+
+    // Free the temporary init sequence (panel initialization is complete)
+    free(init_sequence);
 
     /*ESP_LOGI(TAG, "Register DPI panel event callback for flush ready notification");
     esp_lcd_dpi_panel_event_callbacks_t cbs = {

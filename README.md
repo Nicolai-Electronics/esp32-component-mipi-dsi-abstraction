@@ -27,6 +27,51 @@ Alternatively, you can create `idf_component.yml`. More is in [Espressif's docum
 This component was made to facilitate easier testing for our firmwares on both the devkits and our target hardware and thus
 the configurations we use are the only supported display configurations.
 
+## ST7701 Color Format Configuration (Tanmatsu)
+
+The ST7701 driver for Tanmatsu devices **defaults to RGB888 (24-bit color)** mode, providing full 16.7 million colors with 8-bit precision per RGB channel.
+
+### Switching to RGB565 Mode
+
+If you need to use RGB565 (16-bit color) mode for bandwidth savings or compatibility, you must configure it **before** the display is initialized.
+
+**Important:** On Tanmatsu devices, `st7701_initialize()` is called internally by `bsp_device_initialize()`. You must call `st7701_set_color_format()` **before** `bsp_device_initialize()` to ensure the display controller is configured correctly from the start.
+
+#### Usage Example:
+
+```c
+#include "esp_lcd_mipi_dsi.h"
+#include "bsp/device.h"
+
+// Declare the ST7701 color format function
+extern esp_err_t st7701_set_color_format(lcd_color_rgb_pixel_format_t format);
+
+void app_main(void) {
+    // Configure for RGB565 mode BEFORE BSP initialization
+    st7701_set_color_format(LCD_COLOR_PIXEL_FORMAT_RGB565);
+
+    // Initialize BSP (this calls st7701_initialize() internally)
+    bsp_device_initialize();
+
+    // Query the configured format
+    size_t h_res, v_res;
+    lcd_color_rgb_pixel_format_t color_fmt;
+    st7701_get_parameters(&h_res, &v_res, &color_fmt);
+    // color_fmt will be LCD_COLOR_PIXEL_FORMAT_RGB565
+}
+```
+
+**Note:** The `extern` declaration is necessary because `st7701_set_color_format()` is not exposed through the BSP headers. Alternatively, you can include `"dsi_panel_nicolaielectronics_st7701.h"` directly if your build system has access to the component headers.
+
+### Color Format Comparison
+
+| Format | Bits/Pixel | Colors | Memory (480×800) | Bandwidth |
+|--------|-----------|--------|-----------------|-----------|
+| RGB888 | 24 | 16.7M | 1,152,000 bytes | Higher |
+| RGB565 | 16 | 65,536 | 768,000 bytes | Lower |
+
+**Default:** RGB888 (24-bit) for maximum color quality.
+
 ## Example
 
 ```

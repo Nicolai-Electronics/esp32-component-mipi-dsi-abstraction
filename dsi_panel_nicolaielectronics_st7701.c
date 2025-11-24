@@ -4,12 +4,15 @@
  * SPDX-License-Identifier: MIT
  */
 
+#include "dsi_panel_nicolaielectronics_st7701.h"
 #include <stdio.h>
 #include <string.h>
 #include "driver/gpio.h"
+#include "esp_check.h"
 #include "esp_err.h"
 #include "esp_lcd_mipi_dsi.h"
 #include "esp_lcd_panel_commands.h"
+#include "esp_lcd_panel_io.h"
 #include "esp_lcd_panel_ops.h"
 #include "esp_lcd_st7701.h"
 #include "esp_ldo_regulator.h"
@@ -31,7 +34,7 @@ static const char* TAG = "ST7701 panel";
 #define PANEL_MIPI_DSI_LCD_HFP     30
 #define PANEL_MIPI_DSI_LCD_VSYNC   16
 #define PANEL_MIPI_DSI_LCD_VBP     16
-#define PANEL_MIPI_DSI_LCD_VFP     16
+#define PANEL_MIPI_DSI_LCD_VFP     2
 
 #define PANEL_MIPI_DSI_LANE_NUM          2
 #define PANEL_MIPI_DSI_LANE_BITRATE_MBPS 500
@@ -88,6 +91,8 @@ static const st7701_lcd_init_cmd_t tanmatsu_display_init_sequence[] = {
 static esp_lcd_panel_handle_t mipi_dpi_panel = NULL;
 static esp_lcd_panel_io_handle_t mipi_dbi_io = NULL;
 
+static st7701_configuration_t st7701_config = {0};
+
 esp_lcd_panel_handle_t st7701_get_panel(void) {
     return mipi_dpi_panel;
 }
@@ -104,13 +109,14 @@ esp_err_t st7701_get_parameters(size_t* h_res, size_t* v_res, lcd_color_rgb_pixe
         *v_res = PANEL_MIPI_DSI_LCD_V_RES;
     }
     if (color_fmt) {
-        *color_fmt = LCD_COLOR_PIXEL_FORMAT_RGB565;
+        *color_fmt = st7701_config.use_24_bit_color ? LCD_COLOR_PIXEL_FORMAT_RGB888 : LCD_COLOR_PIXEL_FORMAT_RGB565;
     }
 
     return ESP_OK;
 }
 
-esp_err_t st7701_initialize(gpio_num_t reset_pin) {
+esp_err_t st7701_initialize(const st7701_configuration_t* config) {
+    memcpy(&st7701_config, config, sizeof(st7701_configuration_t));
     // create MIPI DSI bus first, it will initialize the DSI PHY as well
     esp_lcd_dsi_bus_handle_t mipi_dsi_bus;
     esp_lcd_dsi_bus_config_t bus_config = {
@@ -119,7 +125,7 @@ esp_err_t st7701_initialize(gpio_num_t reset_pin) {
         .phy_clk_src = MIPI_DSI_PHY_CLK_SRC_DEFAULT,
         .lane_bit_rate_mbps = PANEL_MIPI_DSI_LANE_BITRATE_MBPS,
     };
-    ESP_ERROR_CHECK(esp_lcd_new_dsi_bus(&bus_config, &mipi_dsi_bus));
+    ESP_RETURN_ON_ERROR(esp_lcd_new_dsi_bus(&bus_config, &mipi_dsi_bus), TAG, "failed to create MIPI DSI bus");
 
     ESP_LOGI(TAG, "Install MIPI DSI LCD control IO");
     // we use DBI interface to send LCD commands and parameters
@@ -128,14 +134,16 @@ esp_err_t st7701_initialize(gpio_num_t reset_pin) {
         .lcd_cmd_bits = 8,    // according to the LCD spec
         .lcd_param_bits = 8,  // according to the LCD spec
     };
-    ESP_ERROR_CHECK(esp_lcd_new_panel_io_dbi(mipi_dsi_bus, &dbi_config, &mipi_dbi_io));
+    ESP_RETURN_ON_ERROR(esp_lcd_new_panel_io_dbi(mipi_dsi_bus, &dbi_config, &mipi_dbi_io), TAG,
+                        "failed to install MIPI DSI DBI IO");
 
     ESP_LOGI(TAG, "Install MIPI DSI LCD data panel");
     esp_lcd_dpi_panel_config_t dpi_config = {
         .virtual_channel = 0,
         .dpi_clk_src = MIPI_DSI_DPI_CLK_SRC_DEFAULT,
         .dpi_clock_freq_mhz = PANEL_MIPI_DSI_DPI_CLK_MHZ,
-        .pixel_format = LCD_COLOR_PIXEL_FORMAT_RGB565,
+        .pixel_format = config->use_24_bit_color ? LCD_COLOR_PIXEL_FORMAT_RGB888 : LCD_COLOR_PIXEL_FORMAT_RGB565,
+        .num_fbs = config->num_fbs,
         .video_timing =
             {
                 .h_size = PANEL_MIPI_DSI_LCD_H_RES,
@@ -162,22 +170,28 @@ esp_err_t st7701_initialize(gpio_num_t reset_pin) {
             .use_mipi_interface = true,
         }};
     esp_lcd_panel_dev_config_t lcd_dev_config = {
-        .reset_gpio_num = reset_pin,
+        .reset_gpio_num = config->reset_pin,
         .rgb_ele_order = LCD_RGB_ELEMENT_ORDER_RGB,
-        .bits_per_pixel = 16,
+        .bits_per_pixel = config->use_24_bit_color ? 24 : 16,
         .vendor_config = &vendor_config,
     };
-    ESP_ERROR_CHECK(esp_lcd_new_panel_st7701(mipi_dbi_io, &lcd_dev_config, &mipi_dpi_panel));
+    ESP_RETURN_ON_ERROR(esp_lcd_new_panel_st7701(mipi_dbi_io, &lcd_dev_config, &mipi_dpi_panel), TAG,
+                        "failed to install ST7701 panel");
 
-    ESP_ERROR_CHECK(esp_lcd_panel_reset(mipi_dpi_panel));
-    ESP_ERROR_CHECK(esp_lcd_panel_init(mipi_dpi_panel));
+    ESP_RETURN_ON_ERROR(esp_lcd_panel_reset(mipi_dpi_panel), TAG, "failed to reset ST7701 panel");
+    ESP_RETURN_ON_ERROR(esp_lcd_panel_init(mipi_dpi_panel), TAG, "failed to initialize ST7701 panel");
+
+    ESP_RETURN_ON_ERROR(
+        esp_lcd_panel_io_tx_param(mipi_dbi_io, LCD_CMD_COLMOD, (uint8_t[]){config->use_24_bit_color ? 0x77 : 0x55}, 1),
+        TAG, "failed to set color mode");
 
     /*ESP_LOGI(TAG, "Register DPI panel event callback for flush ready notification");
     esp_lcd_dpi_panel_event_callbacks_t cbs = {
         //.on_color_trans_done = ...,
         //.on_refresh_done = ...,
     };
-    ESP_ERROR_CHECK(esp_lcd_dpi_panel_register_event_callbacks(mipi_dpi_panel, &cbs, display));*/
+    ESP_RETURN_ON_ERROR(esp_lcd_dpi_panel_register_event_callbacks(mipi_dpi_panel, &cbs, display), TAG, "failed to
+    register flush event callback");*/
 
     return ESP_OK;
 }

@@ -43,6 +43,7 @@ static esp_lcd_panel_io_handle_t io = NULL;
 static esp_lcd_panel_io_handle_t io_cec_dsi = NULL;
 static esp_lcd_panel_io_handle_t io_avi = NULL;
 static lt8912b_resolution_t panel_resolution = LT8912B_RESOLUTION_800X600;
+static esp_lcd_dpi_panel_config_t dpi_config;
 
 esp_lcd_panel_handle_t lt8912b_get_panel(void) {
     return mipi_panel;
@@ -97,27 +98,26 @@ esp_err_t lt8912b_get_parameters(size_t* h_res, size_t* v_res, lcd_color_rgb_pix
     return ESP_OK;
 }
 
-esp_err_t lt8912b_initialize(gpio_num_t reset_pin, i2c_master_bus_handle_t i2c_handle,
-                             lt8912b_resolution_t resolution) {
-    if (resolution >= LT8912B_RESOLUTION_MAX) {
+esp_err_t lt8912b_initialize(const lt8912b_configuration_t* config) {
+    if (config->resolution >= LT8912B_RESOLUTION_MAX) {
         ESP_LOGE(TAG, "Invalid resolution");
         return ESP_ERR_INVALID_ARG;
     }
 
-    panel_resolution = resolution;
+    panel_resolution = config->resolution;
 
     // I2C configuration
 
     uint32_t i2c_speed = 100000;
 
     esp_lcd_panel_io_i2c_config_t io_config = LT8912B_IO_CFG(i2c_speed, LT8912B_IO_I2C_MAIN_ADDRESS);
-    ESP_ERROR_CHECK(esp_lcd_new_panel_io_i2c(i2c_handle, &io_config, &io));
+    ESP_ERROR_CHECK(esp_lcd_new_panel_io_i2c(config->i2c_handle, &io_config, &io));
 
     esp_lcd_panel_io_i2c_config_t io_config_cec = LT8912B_IO_CFG(i2c_speed, LT8912B_IO_I2C_CEC_ADDRESS);
-    ESP_ERROR_CHECK(esp_lcd_new_panel_io_i2c(i2c_handle, &io_config_cec, &io_cec_dsi));
+    ESP_ERROR_CHECK(esp_lcd_new_panel_io_i2c(config->i2c_handle, &io_config_cec, &io_cec_dsi));
 
     esp_lcd_panel_io_i2c_config_t io_config_avi = LT8912B_IO_CFG(i2c_speed, LT8912B_IO_I2C_AVI_ADDRESS);
-    ESP_ERROR_CHECK(esp_lcd_new_panel_io_i2c(i2c_handle, &io_config_avi, &io_avi));
+    ESP_ERROR_CHECK(esp_lcd_new_panel_io_i2c(config->i2c_handle, &io_config_avi, &io_avi));
 
     // MIPI DSI bus
     esp_lcd_dsi_bus_handle_t mipi_dsi_bus;
@@ -130,11 +130,14 @@ esp_err_t lt8912b_initialize(gpio_num_t reset_pin, i2c_master_bus_handle_t i2c_h
     ESP_ERROR_CHECK(esp_lcd_new_dsi_bus(&bus_config, &mipi_dsi_bus));
 
     // LT8912B MIPI DSI data
+    dpi_config = dpi_configs[panel_resolution];
+    dpi_config.num_fbs = config->num_fbs;
+
     lt8912b_vendor_config_t vendor_config = {
         .mipi_config =
             {
                 .dsi_bus = mipi_dsi_bus,
-                .dpi_config = &dpi_configs[panel_resolution],
+                .dpi_config = &dpi_config,
                 .lane_num = 2,
             },
     };
@@ -142,7 +145,7 @@ esp_err_t lt8912b_initialize(gpio_num_t reset_pin, i2c_master_bus_handle_t i2c_h
     memcpy(&vendor_config.video_timing, &video_timings[panel_resolution], sizeof(esp_lcd_panel_lt8912b_video_timing_t));
 
     esp_lcd_panel_dev_config_t panel_config = {
-        .reset_gpio_num = reset_pin,
+        .reset_gpio_num = config->reset_pin,
         .rgb_ele_order = LCD_RGB_ELEMENT_ORDER_RGB,
         .bits_per_pixel = 24,
         .vendor_config = &vendor_config,

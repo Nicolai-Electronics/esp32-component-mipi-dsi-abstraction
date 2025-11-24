@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+#include "dsi_panel_espressif_ek79007.h"
 #include <stdio.h>
 #include <string.h>
 #include "driver/gpio.h"
@@ -53,7 +54,7 @@ esp_err_t ek79007_get_parameters(size_t* h_res, size_t* v_res, lcd_color_rgb_pix
     return ESP_OK;
 }
 
-esp_err_t ek79007_initialize(gpio_num_t reset_pin) {
+esp_err_t ek79007_initialize(const ek79007_configuration_t* config) {
     // create MIPI DSI bus first, it will initialize the DSI PHY as well
     esp_lcd_dsi_bus_handle_t mipi_dsi_bus;
     esp_lcd_dsi_bus_config_t bus_config = {
@@ -80,6 +81,7 @@ esp_err_t ek79007_initialize(gpio_num_t reset_pin) {
         .dpi_clk_src = MIPI_DSI_DPI_CLK_SRC_DEFAULT,
         .dpi_clock_freq_mhz = PANEL_MIPI_DSI_DPI_CLK_MHZ,
         .pixel_format = LCD_COLOR_PIXEL_FORMAT_RGB888,
+        .num_fbs = config->num_fbs,
         .video_timing =
             {
                 .h_size = PANEL_MIPI_DSI_LCD_H_RES,
@@ -102,7 +104,7 @@ esp_err_t ek79007_initialize(gpio_num_t reset_pin) {
             },
     };
     esp_lcd_panel_dev_config_t lcd_dev_config = {
-        .reset_gpio_num = reset_pin,
+        .reset_gpio_num = config->reset_pin,
         .rgb_ele_order = LCD_RGB_ELEMENT_ORDER_RGB,
         .bits_per_pixel = 24,
         .vendor_config = &vendor_config,

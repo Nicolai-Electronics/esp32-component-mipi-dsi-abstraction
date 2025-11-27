@@ -179,6 +179,7 @@ esp_err_t st7701_initialize(const st7701_configuration_t* config) {
                         "failed to install ST7701 panel");
 
     ESP_RETURN_ON_ERROR(esp_lcd_panel_reset(mipi_dpi_panel), TAG, "failed to reset ST7701 panel");
+    vTaskDelay(pdMS_TO_TICKS(100));
     ESP_RETURN_ON_ERROR(esp_lcd_panel_init(mipi_dpi_panel), TAG, "failed to initialize ST7701 panel");
 
     ESP_RETURN_ON_ERROR(

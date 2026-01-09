@@ -25,16 +25,18 @@
 
 static const char* TAG = "ST7701 panel";
 
-// FPS = 30000000/(40+40+30+480)/(16+16+16+800) = 60Hz
+// FPS = 30000000/(480+40+40+30)/(800+16+16+15) = 60Hz
 #define PANEL_MIPI_DSI_DPI_CLK_MHZ 30
+
 #define PANEL_MIPI_DSI_LCD_H_RES   480
-#define PANEL_MIPI_DSI_LCD_V_RES   800
 #define PANEL_MIPI_DSI_LCD_HSYNC   40
 #define PANEL_MIPI_DSI_LCD_HBP     40
 #define PANEL_MIPI_DSI_LCD_HFP     30
+
+#define PANEL_MIPI_DSI_LCD_V_RES   800
 #define PANEL_MIPI_DSI_LCD_VSYNC   16
 #define PANEL_MIPI_DSI_LCD_VBP     16
-#define PANEL_MIPI_DSI_LCD_VFP     2
+#define PANEL_MIPI_DSI_LCD_VFP     15
 
 #define PANEL_MIPI_DSI_LANE_NUM          2
 #define PANEL_MIPI_DSI_LANE_BITRATE_MBPS 500
@@ -47,7 +49,7 @@ static const st7701_lcd_init_cmd_t tanmatsu_display_init_sequence[] = {
 
     {0xFF, (uint8_t[]){0x77, 0x01, 0x00, 0x00, 0x10}, 5, 0},  // Command 2 BK0 function
     {0xC0, (uint8_t[]){0x63, 0x00}, 2, 0},                    // LNESET (Display Line Setting): (0x63+1)*8 = 800 lines
-    {0xC1, (uint8_t[]){0x10, 0x02}, 2, 0},                    // PORCTRL (Porch Control): VBP = 16, VFP = 2
+    {0xC1, (uint8_t[]){PANEL_MIPI_DSI_LCD_VBP, PANEL_MIPI_DSI_LCD_VFP}, 2, 0}, // PORCTRL (Porch Control): VBP & VFP
     {0xC2, (uint8_t[]){0x37, 0x08}, 2, 0},  // INVSET (Inversion sel. & frame rate control): PCLK=512+(8*16) = 640
     {0xCC, (uint8_t[]){0x38}, 1, 0},        //
     {0xB0, (uint8_t[]){0x40, 0xC9, 0x90, 0x0D, 0x0F, 0x04, 0x00, 0x07, 0x07, 0x1C, 0x04, 0x52, 0x0F, 0xDF, 0x26, 0xCF},

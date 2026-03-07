@@ -34,7 +34,7 @@ static const char* TAG = "ST7701 panel";
 #define PANEL_MIPI_DSI_LCD_HFP     30
 #define PANEL_MIPI_DSI_LCD_VSYNC   16
 #define PANEL_MIPI_DSI_LCD_VBP     16
-#define PANEL_MIPI_DSI_LCD_VFP     2
+#define PANEL_MIPI_DSI_LCD_VFP     16
 
 #define PANEL_MIPI_DSI_LANE_NUM          2
 #define PANEL_MIPI_DSI_LANE_BITRATE_MBPS 500

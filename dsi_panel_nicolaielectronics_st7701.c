@@ -47,8 +47,8 @@ static const st7701_lcd_init_cmd_t tanmatsu_display_init_sequence[] = {
 
     {0xFF, (uint8_t[]){0x77, 0x01, 0x00, 0x00, 0x10}, 5, 0},  // Command 2 BK0 function
     {0xC0, (uint8_t[]){0x63, 0x00}, 2, 0},                    // LNESET (Display Line Setting): (0x63+1)*8 = 800 lines
-    {0xC1, (uint8_t[]){0x10, 0x02}, 2, 0},                    // PORCTRL (Porch Control): VBP = 16, VFP = 2
-    {0xC2, (uint8_t[]){0x37, 0x08}, 2, 0},  // INVSET (Inversion sel. & frame rate control): PCLK=512+(8*16) = 640
+    {0xC1, (uint8_t[]){0x10, 0x10}, 2, 0},                    // PORCTRL (Porch Control): VBP = 16, VFP = 16
+    {0xC2, (uint8_t[]){0x37, 0x04}, 2, 0},  // INVSET (Inversion sel. & frame rate control): PCLK=512+(4*16) = 576
     {0xCC, (uint8_t[]){0x38}, 1, 0},        //
     {0xB0, (uint8_t[]){0x40, 0xC9, 0x90, 0x0D, 0x0F, 0x04, 0x00, 0x07, 0x07, 0x1C, 0x04, 0x52, 0x0F, 0xDF, 0x26, 0xCF},
      16, 0},  // PVGAMCTRL

@@ -41,7 +41,7 @@ esp_lcd_panel_handle_t ek79007_get_panel(void) {
     return mipi_dpi_panel;
 }
 
-esp_err_t ek79007_get_parameters(size_t* h_res, size_t* v_res, lcd_color_rgb_pixel_format_t* color_fmt) {
+esp_err_t ek79007_get_parameters(size_t* h_res, size_t* v_res, lcd_color_format_t* color_fmt) {
     if (h_res) {
         *h_res = PANEL_MIPI_DSI_LCD_H_RES;
     }
@@ -49,7 +49,7 @@ esp_err_t ek79007_get_parameters(size_t* h_res, size_t* v_res, lcd_color_rgb_pix
         *v_res = PANEL_MIPI_DSI_LCD_V_RES;
     }
     if (color_fmt) {
-        *color_fmt = LCD_COLOR_PIXEL_FORMAT_RGB888;
+        *color_fmt = LCD_COLOR_FMT_RGB888;
     }
     return ESP_OK;
 }
@@ -80,7 +80,7 @@ esp_err_t ek79007_initialize(const ek79007_configuration_t* config) {
         .virtual_channel = 0,
         .dpi_clk_src = MIPI_DSI_DPI_CLK_SRC_DEFAULT,
         .dpi_clock_freq_mhz = PANEL_MIPI_DSI_DPI_CLK_MHZ,
-        .pixel_format = LCD_COLOR_PIXEL_FORMAT_RGB888,
+        .in_color_format = LCD_COLOR_FMT_RGB888,
         .num_fbs = config->num_fbs,
         .video_timing =
             {
@@ -93,7 +93,6 @@ esp_err_t ek79007_initialize(const ek79007_configuration_t* config) {
                 .vsync_pulse_width = PANEL_MIPI_DSI_LCD_VSYNC,
                 .vsync_front_porch = PANEL_MIPI_DSI_LCD_VFP,
             },
-        .flags.use_dma2d = true,
     };
 
     ek79007_vendor_config_t vendor_config = {
@@ -110,6 +109,8 @@ esp_err_t ek79007_initialize(const ek79007_configuration_t* config) {
         .vendor_config = &vendor_config,
     };
     ESP_ERROR_CHECK(esp_lcd_new_panel_ek79007(mipi_dbi_io, &lcd_dev_config, &mipi_dpi_panel));
+
+    ESP_ERROR_CHECK(esp_lcd_dpi_panel_enable_dma2d(mipi_dpi_panel));
 
     ESP_ERROR_CHECK(esp_lcd_panel_reset(mipi_dpi_panel));
     ESP_ERROR_CHECK(esp_lcd_panel_init(mipi_dpi_panel));

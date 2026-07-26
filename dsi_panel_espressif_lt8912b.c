@@ -9,6 +9,13 @@
 #include "esp_err.h"
 #include "esp_lcd_lt8912b.h"
 #include "esp_lcd_mipi_dsi.h"
+
+// esp_lcd_lt8912b 0.2.0's *_DPI_CONFIG_WITH_FBS() macros still reference the pixel format
+// enumerator name from before IDF v6.0's esp_lcd_dpi_panel_config_t rework; alias it here
+// until the upstream component is updated.
+#ifndef LCD_COLOR_PIXEL_FORMAT_RGB888
+#define LCD_COLOR_PIXEL_FORMAT_RGB888 LCD_COLOR_FMT_RGB888
+#endif
 #include "esp_lcd_panel_io.h"
 #include "esp_lcd_panel_ops.h"
 #include "esp_lcd_panel_vendor.h"
@@ -49,7 +56,7 @@ esp_lcd_panel_handle_t lt8912b_get_panel(void) {
     return mipi_panel;
 }
 
-esp_err_t lt8912b_get_parameters(size_t* h_res, size_t* v_res, lcd_color_rgb_pixel_format_t* color_fmt) {
+esp_err_t lt8912b_get_parameters(size_t* h_res, size_t* v_res, lcd_color_format_t* color_fmt) {
     if (h_res) {
         switch (panel_resolution) {
             case LT8912B_RESOLUTION_800X600:
@@ -93,7 +100,7 @@ esp_err_t lt8912b_get_parameters(size_t* h_res, size_t* v_res, lcd_color_rgb_pix
         }
     }
     if (color_fmt) {
-        *color_fmt = LCD_COLOR_PIXEL_FORMAT_RGB888;
+        *color_fmt = LCD_COLOR_FMT_RGB888;
     }
     return ESP_OK;
 }

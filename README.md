@@ -110,7 +110,7 @@ void app_main(void)
     esp_lcd_panel_handle_t mipi_dpi_panel = NULL;
     size_t h_res = 0;
     size_t v_res = 0;
-    lcd_color_rgb_pixel_format_t color_fmt = LCD_COLOR_PIXEL_FORMAT_RGB565;
+    lcd_color_format_t color_fmt = LCD_COLOR_FMT_RGB565;
 
     display_type_t display_type = DISPLAY_TYPE_ST7701;
 
@@ -137,13 +137,13 @@ void app_main(void)
 
     uint8_t bytes_per_pixel = 0;
     switch (color_fmt) {
-        case LCD_COLOR_PIXEL_FORMAT_RGB565:
+        case LCD_COLOR_FMT_RGB565:
             bytes_per_pixel = 2;
             break;
-        case LCD_COLOR_PIXEL_FORMAT_RGB666:
+        case LCD_COLOR_FMT_RGB666:
             bytes_per_pixel = 3;
             break;
-        case LCD_COLOR_PIXEL_FORMAT_RGB888:
+        case LCD_COLOR_FMT_RGB888:
             bytes_per_pixel = 3;
             break;
         default:

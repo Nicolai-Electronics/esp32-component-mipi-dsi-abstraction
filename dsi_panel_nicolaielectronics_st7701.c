@@ -101,7 +101,7 @@ esp_lcd_panel_io_handle_t st7701_get_panel_io(void) {
     return mipi_dbi_io;
 }
 
-esp_err_t st7701_get_parameters(size_t* h_res, size_t* v_res, lcd_color_rgb_pixel_format_t* color_fmt) {
+esp_err_t st7701_get_parameters(size_t* h_res, size_t* v_res, lcd_color_format_t* color_fmt) {
     if (h_res) {
         *h_res = PANEL_MIPI_DSI_LCD_H_RES;
     }
@@ -109,7 +109,7 @@ esp_err_t st7701_get_parameters(size_t* h_res, size_t* v_res, lcd_color_rgb_pixe
         *v_res = PANEL_MIPI_DSI_LCD_V_RES;
     }
     if (color_fmt) {
-        *color_fmt = st7701_config.use_24_bit_color ? LCD_COLOR_PIXEL_FORMAT_RGB888 : LCD_COLOR_PIXEL_FORMAT_RGB565;
+        *color_fmt = st7701_config.use_24_bit_color ? LCD_COLOR_FMT_RGB888 : LCD_COLOR_FMT_RGB565;
     }
 
     return ESP_OK;
@@ -142,7 +142,7 @@ esp_err_t st7701_initialize(const st7701_configuration_t* config) {
         .virtual_channel = 0,
         .dpi_clk_src = MIPI_DSI_DPI_CLK_SRC_DEFAULT,
         .dpi_clock_freq_mhz = PANEL_MIPI_DSI_DPI_CLK_MHZ,
-        .pixel_format = config->use_24_bit_color ? LCD_COLOR_PIXEL_FORMAT_RGB888 : LCD_COLOR_PIXEL_FORMAT_RGB565,
+        .in_color_format = config->use_24_bit_color ? LCD_COLOR_FMT_RGB888 : LCD_COLOR_FMT_RGB565,
         .num_fbs = config->num_fbs,
         .video_timing =
             {
@@ -155,7 +155,6 @@ esp_err_t st7701_initialize(const st7701_configuration_t* config) {
                 .vsync_pulse_width = PANEL_MIPI_DSI_LCD_VSYNC,
                 .vsync_front_porch = PANEL_MIPI_DSI_LCD_VFP,
             },
-        .flags.use_dma2d = true,
     };
 
     st7701_vendor_config_t vendor_config = {
@@ -177,6 +176,9 @@ esp_err_t st7701_initialize(const st7701_configuration_t* config) {
     };
     ESP_RETURN_ON_ERROR(esp_lcd_new_panel_st7701(mipi_dbi_io, &lcd_dev_config, &mipi_dpi_panel), TAG,
                         "failed to install ST7701 panel");
+
+    ESP_RETURN_ON_ERROR(esp_lcd_dpi_panel_enable_dma2d(mipi_dpi_panel), TAG,
+                        "failed to enable DMA2D for ST7701 panel");
 
     ESP_RETURN_ON_ERROR(esp_lcd_panel_reset(mipi_dpi_panel), TAG, "failed to reset ST7701 panel");
     vTaskDelay(pdMS_TO_TICKS(100));

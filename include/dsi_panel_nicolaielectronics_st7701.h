@@ -21,7 +21,7 @@ typedef struct {
 esp_lcd_panel_handle_t st7701_get_panel(void);
 esp_lcd_panel_io_handle_t st7701_get_panel_io(void);
 esp_err_t st7701_initialize(const st7701_configuration_t* config);
-esp_err_t st7701_get_parameters(size_t* h_res, size_t* v_res, lcd_color_rgb_pixel_format_t* color_fmt);
+esp_err_t st7701_get_parameters(size_t* h_res, size_t* v_res, lcd_color_format_t* color_fmt);
 
 #ifdef __cplusplus
 }

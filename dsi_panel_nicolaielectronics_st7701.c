@@ -122,7 +122,6 @@ esp_err_t st7701_initialize(const st7701_configuration_t* config) {
     esp_lcd_dsi_bus_config_t bus_config = {
         .bus_id = 0,
         .num_data_lanes = PANEL_MIPI_DSI_LANE_NUM,
-        .phy_clk_src = MIPI_DSI_PHY_CLK_SRC_DEFAULT,
         .lane_bit_rate_mbps = PANEL_MIPI_DSI_LANE_BITRATE_MBPS,
     };
     ESP_RETURN_ON_ERROR(esp_lcd_new_dsi_bus(&bus_config, &mipi_dsi_bus), TAG, "failed to create MIPI DSI bus");
@@ -177,8 +176,7 @@ esp_err_t st7701_initialize(const st7701_configuration_t* config) {
     ESP_RETURN_ON_ERROR(esp_lcd_new_panel_st7701(mipi_dbi_io, &lcd_dev_config, &mipi_dpi_panel), TAG,
                         "failed to install ST7701 panel");
 
-    ESP_RETURN_ON_ERROR(esp_lcd_dpi_panel_enable_dma2d(mipi_dpi_panel), TAG,
-                        "failed to enable DMA2D for ST7701 panel");
+    ESP_RETURN_ON_ERROR(esp_lcd_dpi_panel_enable_dma2d(mipi_dpi_panel), TAG, "failed to enable DMA2D for ST7701 panel");
 
     ESP_RETURN_ON_ERROR(esp_lcd_panel_reset(mipi_dpi_panel), TAG, "failed to reset ST7701 panel");
     vTaskDelay(pdMS_TO_TICKS(100));

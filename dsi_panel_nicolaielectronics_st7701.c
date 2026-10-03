@@ -18,6 +18,7 @@
 #include "esp_ldo_regulator.h"
 #include "esp_log.h"
 #include "esp_timer.h"
+#include "hal/mipi_dsi_hal.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "freertos/task.h"
@@ -39,6 +40,8 @@ static const char* TAG = "ST7701 panel";
 #define PANEL_MIPI_DSI_LANE_NUM          2
 #define PANEL_MIPI_DSI_LANE_BITRATE_MBPS 500
 
+#define LCD_CMD_ST7701_VCOMS 0xB1  // VCOMS (Command 2 BK1)
+
 static const st7701_lcd_init_cmd_t tanmatsu_display_init_sequence[] = {
     //  {cmd, { data }, data_size, delay_ms}
     {0xFF, (uint8_t[]){0x77, 0x01, 0x00, 0x00, 0x00}, 5, 0},  // Regular command function
@@ -57,7 +60,7 @@ static const st7701_lcd_init_cmd_t tanmatsu_display_init_sequence[] = {
 
     {0xFF, (uint8_t[]){0x77, 0x01, 0x00, 0x00, 0x11}, 5, 0},  // Command 2 BK1 function
     {0xB0, (uint8_t[]){0x5D}, 1, 0},                          // VRHS
-    {0xB1, (uint8_t[]){0x2D}, 1, 0},                          // VCOMS
+    {LCD_CMD_ST7701_VCOMS, (uint8_t[]){0x2D}, 1, 0},          // VCOMS
     {0xB2, (uint8_t[]){0x07}, 1, 0},                          // VGH
     {0xB3, (uint8_t[]){0x80}, 1, 0},                          // TESTCMD
     {0xB5, (uint8_t[]){0x08}, 1, 0},                          // VGLS
@@ -69,8 +72,8 @@ static const st7701_lcd_init_cmd_t tanmatsu_display_init_sequence[] = {
     {0xD0, (uint8_t[]){0x88}, 1, 100},                        // MIPISET1
     {0xE0, (uint8_t[]){0x00, 0x19, 0x02}, 3, 0},              //
     {0xE1, (uint8_t[]){0x05, 0xA0, 0x07, 0xA0, 0x04, 0xA0, 0x06, 0xA0, 0x00, 0x44, 0x44}, 11, 0},              //
-    {0xE2, (uint8_t[]){0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, 13, 0},  //
-    {0xE3, (uint8_t[]){0x00, 0x00, 0x33, 0x33}, 5, 0},                                                         //
+    {0xE2, (uint8_t[]){0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, 12, 0},  //
+    {0xE3, (uint8_t[]){0x00, 0x00, 0x33, 0x33}, 4, 0},                                                   //
     {0xE4, (uint8_t[]){0x44, 0x44}, 2, 0},                                                                     //
     {0xE5, (uint8_t[]){0x0D, 0x31, 0xC8, 0xAF, 0x0F, 0x33, 0xC8, 0xAF, 0x09, 0x2D, 0xC8, 0xAF, 0x0B, 0x2F, 0xC8, 0xAF},
      16, 0},                                            //
@@ -93,6 +96,21 @@ static esp_lcd_panel_io_handle_t mipi_dbi_io = NULL;
 
 static st7701_configuration_t st7701_config = {0};
 
+// Current VCOMS value, matches the value set in tanmatsu_display_init_sequence above
+static uint8_t st7701_vcom = 0x2D;
+
+// VCOMS value read back from the panel's NVM/OTP at reset, before the init sequence overwrites it
+static uint8_t st7701_vcom_otp       = 0x00;
+static bool    st7701_vcom_otp_valid = false;
+
+static esp_err_t st7701_enter_cmd2_bk1(void) {
+    return esp_lcd_panel_io_tx_param(mipi_dbi_io, 0xFF, (uint8_t[]){0x77, 0x01, 0x00, 0x00, 0x11}, 5);
+}
+
+static esp_err_t st7701_exit_cmd2_bk1(void) {
+    return esp_lcd_panel_io_tx_param(mipi_dbi_io, 0xFF, (uint8_t[]){0x77, 0x01, 0x00, 0x00, 0x00}, 5);
+}
+
 esp_lcd_panel_handle_t st7701_get_panel(void) {
     return mipi_dpi_panel;
 }
@@ -112,6 +130,39 @@ esp_err_t st7701_get_parameters(size_t* h_res, size_t* v_res, lcd_color_format_t
         *color_fmt = st7701_config.use_24_bit_color ? LCD_COLOR_FMT_RGB888 : LCD_COLOR_FMT_RGB565;
     }
 
+    return ESP_OK;
+}
+
+esp_err_t st7701_get_vcom(uint8_t* vcom) {
+    if (!vcom) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    *vcom = st7701_vcom;
+    return ESP_OK;
+}
+
+esp_err_t st7701_set_vcom(uint8_t vcom) {
+    if (!mipi_dbi_io) {
+        return ESP_ERR_INVALID_STATE;
+    }
+
+    ESP_RETURN_ON_ERROR(st7701_enter_cmd2_bk1(), TAG, "failed to switch to command 2 BK1");
+    ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(mipi_dbi_io, LCD_CMD_ST7701_VCOMS, (uint8_t[]){vcom}, 1), TAG,
+                        "failed to set VCOMS");
+    ESP_RETURN_ON_ERROR(st7701_exit_cmd2_bk1(), TAG, "failed to switch back to regular command set");
+
+    st7701_vcom = vcom;
+    return ESP_OK;
+}
+
+esp_err_t st7701_get_vcom_otp(uint8_t* vcom) {
+    if (!vcom) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    if (!st7701_vcom_otp_valid) {
+        return ESP_ERR_INVALID_STATE;
+    }
+    *vcom = st7701_vcom_otp;
     return ESP_OK;
 }
 
@@ -180,6 +231,38 @@ esp_err_t st7701_initialize(const st7701_configuration_t* config) {
 
     ESP_RETURN_ON_ERROR(esp_lcd_panel_reset(mipi_dpi_panel), TAG, "failed to reset ST7701 panel");
     vTaskDelay(pdMS_TO_TICKS(100));
+
+    // Read back the VCOM value programmed into the panel's NVM/OTP before the init sequence below
+    // overwrites the VCOMS register with the firmware default.
+    //
+    // This is also our only way to detect that no panel is attached: a DSI generic/DCS
+    // read requires the peer to answer a bus-turnaround (BTA) request, and the DSI host
+    // hardware has no "nobody answered" status bit. Upstream ESP-IDF busy-waits on the
+    // read-complete flags with no timeout, which hangs the whole firmware forever if the
+    // panel is missing. The vendored esp_hal_lcd component in this project bounds that
+    // wait and exposes mipi_dsi_hal_host_gen_read_timed_out() so we can detect it here
+    // instead of hanging.
+    esp_err_t otp_res = st7701_enter_cmd2_bk1();
+    if (otp_res == ESP_OK) {
+        otp_res = esp_lcd_panel_io_rx_param(mipi_dbi_io, LCD_CMD_ST7701_VCOMS, &st7701_vcom_otp, 1);
+    }
+    if (otp_res == ESP_OK && mipi_dsi_hal_host_gen_read_timed_out()) {
+        ESP_LOGE(TAG, "No response from panel while reading VCOM OTP value, is a display connected?");
+        esp_lcd_dpi_panel_disable_dma2d(mipi_dpi_panel);
+        esp_lcd_panel_del(mipi_dpi_panel);
+        mipi_dpi_panel = NULL;
+        return ESP_ERR_NOT_FOUND;
+    }
+    if (otp_res == ESP_OK) {
+        otp_res = st7701_exit_cmd2_bk1();
+    }
+    if (otp_res == ESP_OK) {
+        st7701_vcom_otp_valid = true;
+        ESP_LOGI(TAG, "VCOM value programmed into NVM/OTP: 0x%02X", st7701_vcom_otp);
+    } else {
+        ESP_LOGW(TAG, "Failed to read VCOM value from NVM/OTP: %s", esp_err_to_name(otp_res));
+    }
+
     ESP_RETURN_ON_ERROR(esp_lcd_panel_init(mipi_dpi_panel), TAG, "failed to initialize ST7701 panel");
 
     ESP_RETURN_ON_ERROR(

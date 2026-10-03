@@ -9,6 +9,7 @@ idf_component_register(
     REQUIRES
         "esp_lcd"
         "esp_timer"
+        "esp_hal_lcd"
     )
 
 include(package_manager)

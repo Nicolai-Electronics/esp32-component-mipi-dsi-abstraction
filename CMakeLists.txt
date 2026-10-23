@@ -1,3 +1,11 @@
+set(requires
+    "esp_lcd"
+    "esp_timer"
+    )
+if(CONFIG_MIPI_DSI_ABSTRACTION_USE_VENDORED_ESP_HAL_LCD)
+    list(APPEND requires "esp_hal_lcd")
+endif()
+
 idf_component_register(
     SRCS
         "dsi_panel_espressif_ek79007.c"
@@ -7,9 +15,7 @@ idf_component_register(
     INCLUDE_DIRS
         "include"
     REQUIRES
-        "esp_lcd"
-        "esp_timer"
-        "esp_hal_lcd"
+        ${requires}
     )
 
 include(package_manager)

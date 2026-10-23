@@ -18,11 +18,14 @@
 #include "esp_ldo_regulator.h"
 #include "esp_log.h"
 #include "esp_timer.h"
-#include "hal/mipi_dsi_hal.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "freertos/task.h"
 #include "sdkconfig.h"
+
+#if CONFIG_MIPI_DSI_ABSTRACTION_USE_VENDORED_ESP_HAL_LCD
+#include "hal/mipi_dsi_hal.h"
+#endif
 
 static const char* TAG = "ST7701 panel";
 
@@ -239,13 +242,16 @@ esp_err_t st7701_initialize(const st7701_configuration_t* config) {
     // read requires the peer to answer a bus-turnaround (BTA) request, and the DSI host
     // hardware has no "nobody answered" status bit. Upstream ESP-IDF busy-waits on the
     // read-complete flags with no timeout, which hangs the whole firmware forever if the
-    // panel is missing. The vendored esp_hal_lcd component in this project bounds that
-    // wait and exposes mipi_dsi_hal_host_gen_read_timed_out() so we can detect it here
-    // instead of hanging.
+    // panel is missing. With CONFIG_MIPI_DSI_ABSTRACTION_USE_VENDORED_ESP_HAL_LCD, the
+    // vendored esp_hal_lcd component in this project bounds that wait and exposes
+    // mipi_dsi_hal_host_gen_read_timed_out() so we can detect it here instead of hanging.
+    // Without it, the normal esp_hal_lcd component is used and this detection is skipped,
+    // so a missing panel will hang the read below instead.
     esp_err_t otp_res = st7701_enter_cmd2_bk1();
     if (otp_res == ESP_OK) {
         otp_res = esp_lcd_panel_io_rx_param(mipi_dbi_io, LCD_CMD_ST7701_VCOMS, &st7701_vcom_otp, 1);
     }
+#if CONFIG_MIPI_DSI_ABSTRACTION_USE_VENDORED_ESP_HAL_LCD
     if (otp_res == ESP_OK && mipi_dsi_hal_host_gen_read_timed_out()) {
         ESP_LOGE(TAG, "No response from panel while reading VCOM OTP value, is a display connected?");
         esp_lcd_dpi_panel_disable_dma2d(mipi_dpi_panel);
@@ -253,6 +259,7 @@ esp_err_t st7701_initialize(const st7701_configuration_t* config) {
         mipi_dpi_panel = NULL;
         return ESP_ERR_NOT_FOUND;
     }
+#endif
     if (otp_res == ESP_OK) {
         otp_res = st7701_exit_cmd2_bk1();
     }

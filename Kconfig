@@ -1,0 +1,24 @@
+menu "MIPI DSI Abstraction"
+
+    config MIPI_DSI_ABSTRACTION_USE_VENDORED_ESP_HAL_LCD
+        bool "Use vendored esp_hal_lcd for DSI generic read timeout detection"
+        depends on SOC_MIPI_DSI_SUPPORTED
+        default y
+        help
+            Detecting the VCOM value programmed into a MIPI DSI panel's NVM/OTP
+            requires a generic/DCS read, which needs the panel to answer a bus
+            turnaround (BTA) request. The DSI host has no "nobody answered"
+            status bit, so upstream ESP-IDF busy-waits on the read-complete
+            flags forever if no panel is attached, hanging the firmware.
+
+            Enable this option to require the vendored esp_hal_lcd component,
+            which bounds that wait with a timeout and exposes
+            mipi_dsi_hal_host_gen_read_timed_out() so a missing panel can be
+            detected instead of hanging.
+
+            Disable this option to use the normal esp_hal_lcd component and
+            its available functions instead. The VCOM value is still read
+            correctly when a panel is attached, but without the timeout
+            feature the firmware will hang if no panel is connected.
+
+endmenu

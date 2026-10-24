@@ -3,7 +3,7 @@ menu "MIPI DSI Abstraction"
     config MIPI_DSI_ABSTRACTION_USE_VENDORED_ESP_HAL_LCD
         bool "Use vendored esp_hal_lcd for DSI generic read timeout detection"
         depends on SOC_MIPI_DSI_SUPPORTED
-        default y
+        default n
         help
             Detecting the VCOM value programmed into a MIPI DSI panel's NVM/OTP
             requires a generic/DCS read, which needs the panel to answer a bus

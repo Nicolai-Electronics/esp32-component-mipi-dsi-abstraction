@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: 2024 Nicolai Electronics
+ * SPDX-FileCopyrightText: 2026 Nicolai Electronics
  *
  * SPDX-License-Identifier: MIT
  */

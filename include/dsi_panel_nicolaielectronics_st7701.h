@@ -25,6 +25,8 @@ esp_err_t st7701_get_parameters(size_t* h_res, size_t* v_res, lcd_color_format_t
 esp_err_t st7701_get_vcom(uint8_t* vcom);
 esp_err_t st7701_set_vcom(uint8_t vcom);
 esp_err_t st7701_get_vcom_otp(uint8_t* vcom);
+esp_err_t st7701_get_id(uint8_t id[3]);
+bool st7701_is_display_variant_2(void);
 
 #ifdef __cplusplus
 }

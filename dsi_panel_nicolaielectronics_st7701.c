@@ -74,10 +74,10 @@ static const st7701_lcd_init_cmd_t tanmatsu_display_init_sequence[] = {
     {0xC2, (uint8_t[]){0x78}, 1, 0},                          // SPD2
     {0xD0, (uint8_t[]){0x88}, 1, 100},                        // MIPISET1
     {0xE0, (uint8_t[]){0x00, 0x19, 0x02}, 3, 0},              //
-    {0xE1, (uint8_t[]){0x05, 0xA0, 0x07, 0xA0, 0x04, 0xA0, 0x06, 0xA0, 0x00, 0x44, 0x44}, 11, 0},              //
+    {0xE1, (uint8_t[]){0x05, 0xA0, 0x07, 0xA0, 0x04, 0xA0, 0x06, 0xA0, 0x00, 0x44, 0x44}, 11, 0},        //
     {0xE2, (uint8_t[]){0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, 12, 0},  //
     {0xE3, (uint8_t[]){0x00, 0x00, 0x33, 0x33}, 4, 0},                                                   //
-    {0xE4, (uint8_t[]){0x44, 0x44}, 2, 0},                                                                     //
+    {0xE4, (uint8_t[]){0x44, 0x44}, 2, 0},                                                               //
     {0xE5, (uint8_t[]){0x0D, 0x31, 0xC8, 0xAF, 0x0F, 0x33, 0xC8, 0xAF, 0x09, 0x2D, 0xC8, 0xAF, 0x0B, 0x2F, 0xC8, 0xAF},
      16, 0},                                            //
     {0xE6, (uint8_t[]){0x00, 0x00, 0x33, 0x33}, 4, 0},  //
@@ -94,6 +94,68 @@ static const st7701_lcd_init_cmd_t tanmatsu_display_init_sequence[] = {
     {LCD_CMD_DISPON, (uint8_t[]){0x00}, 0, 0},                // Display on (enable frame buffer output)
 };
 
+// Init sequence for the SW39480800PN03-01-1 display variant, identified by display ID ID0=0x42 ID1=0x00 ID2=0x01
+static const st7701_lcd_init_cmd_t tanmatsu_display_2_init_sequence[] = {
+    //  {cmd, { data }, data_size, delay_ms}
+    {LCD_CMD_SLPOUT, (uint8_t[]){0x00}, 0, 120},  // Exit sleep mode
+
+    {0xFF, (uint8_t[]){0x77, 0x01, 0x00, 0x00, 0x13}, 5, 0},  // Command 2 page 0x13 function
+    {0xEF, (uint8_t[]){0x08}, 1, 0},                          //
+
+    {0xFF, (uint8_t[]){0x77, 0x01, 0x00, 0x00, 0x10}, 5, 0},  // Command 2 BK0 function
+    {0xC0, (uint8_t[]){0x63, 0x00}, 2, 0},                    // LNESET (Display Line Setting): (0x63+1)*8 = 800 lines
+    {0xC1, (uint8_t[]){0x0C, 0x02}, 2, 0},                    // PORCTRL (Porch Control)
+    {0xC2, (uint8_t[]){0x01, 0x02}, 2, 0},                    // INVSET (Inversion sel. & frame rate control)
+    {0xC7, (uint8_t[]){0x00}, 1, 0},                          //
+    {0xCC, (uint8_t[]){0x10}, 1, 0},                          //
+    {0xB0, (uint8_t[]){0x15, 0x16, 0x1C, 0x0C, 0x0E, 0x04, 0x08, 0x06, 0x06, 0x24, 0x01, 0x0D, 0x0E, 0x21, 0x24, 0x0B},
+     16, 0},  // PVGAMCTRL
+    {0xB1, (uint8_t[]){0x15, 0x0C, 0x16, 0x09, 0x0B, 0x04, 0x08, 0x0A, 0x0A, 0x24, 0x09, 0x14, 0x13, 0x28, 0x2D, 0x15},
+     16, 0},  // NVGAMCTRL
+
+    {0xFF, (uint8_t[]){0x77, 0x01, 0x00, 0x00, 0x11}, 5, 0},  // Command 2 BK1 function
+    {0xB0, (uint8_t[]){0x5D}, 1, 0},                          // VRHS
+    {LCD_CMD_ST7701_VCOMS, (uint8_t[]){0x2E}, 1, 0},          // VCOMS
+    {0xB2, (uint8_t[]){0x82}, 1, 0},                          // VGH
+    {0xB3, (uint8_t[]){0x80}, 1, 0},                          // TESTCMD
+    {0xB5, (uint8_t[]){0x45}, 1, 0},                          // VGLS
+    {0xB7, (uint8_t[]){0x8D}, 1, 0},                          // PWCTRL1
+    {0xB8, (uint8_t[]){0x33}, 1, 0},                          // PWCTRL2
+    {0xB9, (uint8_t[]){0x10, 0x1F}, 2, 0},                    // DGMLUTR
+    {0xBB, (uint8_t[]){0x03}, 1, 0},                          //
+    {0xBC, (uint8_t[]){0x3E}, 1, 0},                          //
+    {0xC1, (uint8_t[]){0x78}, 1, 0},                          // SPD1
+    {0xC2, (uint8_t[]){0x78}, 1, 0},                          // SPD2
+    {0xD0, (uint8_t[]){0x88}, 1, 10},                         // MIPISET1
+    {0xE0, (uint8_t[]){0x00, 0x00, 0x02}, 3, 0},              //
+    {0xE1, (uint8_t[]){0x04, 0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x00, 0x20, 0x20}, 11, 0},        //
+    {0xE2, (uint8_t[]){0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, 12, 0},  //
+    {0xE3, (uint8_t[]){0x00, 0x00, 0x33, 0x00}, 4, 0},                                                   //
+    {0xE4, (uint8_t[]){0x22, 0x00}, 2, 0},                                                               //
+    {0xE5, (uint8_t[]){0x04, 0x34, 0x9A, 0xA0, 0x06, 0x34, 0x9A, 0xA0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+     16, 0},                                            //
+    {0xE6, (uint8_t[]){0x00, 0x00, 0x33, 0x00}, 4, 0},  //
+    {0xE7, (uint8_t[]){0x22, 0x00}, 2, 0},              //
+    {0xE8, (uint8_t[]){0x05, 0x34, 0x9A, 0xA0, 0x07, 0x34, 0x9A, 0xA0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+     16, 0},                                                              //
+    {0xEB, (uint8_t[]){0x02, 0x00, 0x40, 0x40, 0x00, 0x00, 0x00}, 7, 0},  //
+    {0xEC, (uint8_t[]){0x00, 0x00}, 2, 0},                                //
+    {0xED, (uint8_t[]){0xFA, 0x45, 0x0B, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xB0, 0x54, 0xAF},
+     16, 0},                                                        //
+    {0xEF, (uint8_t[]){0x08, 0x08, 0x08, 0x45, 0x3F, 0x54}, 6, 0},  //
+
+    {0xFF, (uint8_t[]){0x77, 0x01, 0x00, 0x00, 0x13}, 5, 0},  // Command 2 page 0x13 function
+    {0xE8, (uint8_t[]){0x00, 0x0E}, 2, 0},                    //
+    {LCD_CMD_SLPOUT, (uint8_t[]){0x00}, 0, 120},              // Exit sleep mode
+    {0xE8, (uint8_t[]){0x00, 0x0C}, 2, 10},                   //
+    {0xE8, (uint8_t[]){0x00, 0x00}, 2, 0},                    //
+
+    {0xFF, (uint8_t[]){0x77, 0x01, 0x00, 0x00, 0x10}, 5, 0},  // Command 2 BK0 function
+    {LCD_CMD_MADCTL, (uint8_t[]){0x00}, 1, 0},                // Memory data access control
+
+    {LCD_CMD_DISPON, (uint8_t[]){0x00}, 0, 20},  // Display on (enable frame buffer output)
+};
+
 static esp_lcd_panel_handle_t mipi_dpi_panel = NULL;
 static esp_lcd_panel_io_handle_t mipi_dbi_io = NULL;
 
@@ -103,8 +165,17 @@ static st7701_configuration_t st7701_config = {0};
 static uint8_t st7701_vcom = 0x2D;
 
 // VCOMS value read back from the panel's NVM/OTP at reset, before the init sequence overwrites it
-static uint8_t st7701_vcom_otp       = 0x00;
-static bool    st7701_vcom_otp_valid = false;
+static uint8_t st7701_vcom_otp = 0x00;
+static bool st7701_vcom_otp_valid = false;
+
+// Display ID0/ID1/ID2 read back from the panel via RDDID (0x04) at reset, used to distinguish between
+// different display variants that otherwise share the same ST7701 controller.
+static uint8_t st7701_id[3] = {0x00, 0x00, 0x00};
+static bool st7701_id_valid = false;
+
+// Set once the display ID has been read, when it matches the second display variant
+// (ID0=0x42 ID1=0x00 ID2=0x01) and tanmatsu_display_2_init_sequence is in use.
+static bool st7701_is_display_2 = false;
 
 static esp_err_t st7701_enter_cmd2_bk1(void) {
     return esp_lcd_panel_io_tx_param(mipi_dbi_io, 0xFF, (uint8_t[]){0x77, 0x01, 0x00, 0x00, 0x11}, 5);
@@ -169,6 +240,21 @@ esp_err_t st7701_get_vcom_otp(uint8_t* vcom) {
     return ESP_OK;
 }
 
+esp_err_t st7701_get_id(uint8_t id[3]) {
+    if (!id) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    if (!st7701_id_valid) {
+        return ESP_ERR_INVALID_STATE;
+    }
+    memcpy(id, st7701_id, sizeof(st7701_id));
+    return ESP_OK;
+}
+
+bool st7701_is_display_variant_2(void) {
+    return st7701_is_display_2;
+}
+
 esp_err_t st7701_initialize(const st7701_configuration_t* config) {
     memcpy(&st7701_config, config, sizeof(st7701_configuration_t));
     // create MIPI DSI bus first, it will initialize the DSI PHY as well
@@ -189,6 +275,21 @@ esp_err_t st7701_initialize(const st7701_configuration_t* config) {
     };
     ESP_RETURN_ON_ERROR(esp_lcd_new_panel_io_dbi(mipi_dsi_bus, &dbi_config, &mipi_dbi_io), TAG,
                         "failed to install MIPI DSI DBI IO");
+
+    esp_err_t id_res = esp_lcd_panel_io_rx_param(mipi_dbi_io, LCD_CMD_RDDID, st7701_id, 3);
+#if CONFIG_MIPI_DSI_ABSTRACTION_USE_VENDORED_ESP_HAL_LCD
+    if (id_res == ESP_OK && mipi_dsi_hal_host_gen_read_timed_out()) {
+        ESP_LOGE(TAG, "No response from panel while reading display ID, is a display connected?");
+        return ESP_ERR_NOT_FOUND;
+    }
+#endif
+    if (id_res == ESP_OK) {
+        st7701_id_valid = true;
+        st7701_is_display_2 = (st7701_id[0] == 0x42 && st7701_id[1] == 0x00 && st7701_id[2] == 0x01);
+        ESP_LOGI(TAG, "Display ID: ID0=0x%02X ID1=0x%02X ID2=0x%02X", st7701_id[0], st7701_id[1], st7701_id[2]);
+    } else {
+        ESP_LOGW(TAG, "Failed to read display ID: %s", esp_err_to_name(id_res));
+    }
 
     ESP_LOGI(TAG, "Install MIPI DSI LCD data panel");
     esp_lcd_dpi_panel_config_t dpi_config = {
@@ -211,8 +312,9 @@ esp_err_t st7701_initialize(const st7701_configuration_t* config) {
     };
 
     st7701_vendor_config_t vendor_config = {
-        .init_cmds = tanmatsu_display_init_sequence,
-        .init_cmds_size = sizeof(tanmatsu_display_init_sequence) / sizeof(st7701_lcd_init_cmd_t),
+        .init_cmds = st7701_is_display_2 ? tanmatsu_display_2_init_sequence : tanmatsu_display_init_sequence,
+        .init_cmds_size = st7701_is_display_2 ? sizeof(tanmatsu_display_2_init_sequence) / sizeof(st7701_lcd_init_cmd_t)
+                                              : sizeof(tanmatsu_display_init_sequence) / sizeof(st7701_lcd_init_cmd_t),
         .mipi_config =
             {
                 .dsi_bus = mipi_dsi_bus,
@@ -221,6 +323,7 @@ esp_err_t st7701_initialize(const st7701_configuration_t* config) {
         .flags = {
             .use_mipi_interface = true,
         }};
+
     esp_lcd_panel_dev_config_t lcd_dev_config = {
         .reset_gpio_num = config->reset_pin,
         .rgb_ele_order = LCD_RGB_ELEMENT_ORDER_RGB,

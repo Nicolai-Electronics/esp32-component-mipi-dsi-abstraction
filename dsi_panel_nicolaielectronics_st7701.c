@@ -283,13 +283,13 @@ esp_err_t st7701_initialize(const st7701_configuration_t* config) {
         return ESP_ERR_NOT_FOUND;
     }
 #endif
-    if (id_res == ESP_OK) {
-        st7701_id_valid = true;
-        st7701_is_display_2 = (st7701_id[0] == 0x42 && st7701_id[1] == 0x00 && st7701_id[2] == 0x01);
-        ESP_LOGI(TAG, "Display ID: ID0=0x%02X ID1=0x%02X ID2=0x%02X", st7701_id[0], st7701_id[1], st7701_id[2]);
-    } else {
-        ESP_LOGW(TAG, "Failed to read display ID: %s", esp_err_to_name(id_res));
+    if (id_res != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to read display ID: %s", esp_err_to_name(id_res));
+        return id_res;
     }
+    st7701_id_valid = true;
+    st7701_is_display_2 = (st7701_id[0] == 0x42 && st7701_id[1] == 0x00 && st7701_id[2] == 0x01);
+    ESP_LOGI(TAG, "Display ID: ID0=0x%02X ID1=0x%02X ID2=0x%02X", st7701_id[0], st7701_id[1], st7701_id[2]);
 
     ESP_LOGI(TAG, "Install MIPI DSI LCD data panel");
     esp_lcd_dpi_panel_config_t dpi_config = {

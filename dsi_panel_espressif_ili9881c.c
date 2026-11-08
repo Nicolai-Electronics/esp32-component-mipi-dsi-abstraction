@@ -12,6 +12,7 @@
 #include "esp_lcd_ili9881c.h"
 #include "esp_lcd_mipi_dsi.h"
 #include "esp_lcd_panel_ops.h"
+#include "esp_idf_version.h"
 #include "esp_ldo_regulator.h"
 #include "esp_log.h"
 #include "esp_timer.h"
@@ -112,7 +113,9 @@ esp_err_t ili9881c_initialize(const ili9881c_configuration_t* config) {
     };
     ESP_ERROR_CHECK(esp_lcd_new_panel_ili9881c(mipi_dbi_io, &lcd_dev_config, &mipi_dpi_panel));
 
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(6, 0, 0)
     ESP_ERROR_CHECK(esp_lcd_dpi_panel_enable_dma2d(mipi_dpi_panel));
+#endif
 
     ESP_ERROR_CHECK(esp_lcd_panel_reset(mipi_dpi_panel));
     ESP_ERROR_CHECK(esp_lcd_panel_init(mipi_dpi_panel));
